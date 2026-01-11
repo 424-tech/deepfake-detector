@@ -195,3 +195,4 @@ class DeepfakeDetector:
         final_confidence = (weighted_score * 0.7) + (normalized_anomaly * 0.3)
         
         return min(1.0, max(0.0, final_confidence))
+# Local deepfake detector implementation

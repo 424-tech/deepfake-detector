@@ -289,3 +289,4 @@ class ImageProcessor:
         features['gb_correlation'] = abs(np.corrcoef(g_flat, b_flat)[0, 1])
         
         return features
+# Image processing utilities

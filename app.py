@@ -7,29 +7,45 @@ import tempfile
 import os
 from contextlib import contextmanager
 
+# Local modules
+from deepfake_detector import DeepfakeDetector
+from image_processor import ImageProcessor
+import utils
+
 # Import Reality Defender SDK
 try:
     from realitydefender import RealityDefender
+    HAS_SDK = True
 except ImportError:
-    st.error("❌ Reality Defender SDK not installed. Please install it with: pip install realitydefender")
-    st.stop()
+    HAS_SDK = False
 
 # ───────────────────────── CONFIG
-try:
-    API_KEY = st.secrets["REALITY_DEFENDER_API_KEY"]
-except KeyError:
-    st.error("❌ API key not found. Please add REALITY_DEFENDER_API_KEY to your Streamlit secrets.")
-    st.stop()
-
-# Initialize Reality Defender SDK
-try:
-    rd = RealityDefender(api_key=API_KEY)
-except Exception as e:
-    st.error(f"❌ Failed to initialize Reality Defender SDK: {e}")
-    st.stop()
-
 # File size limit (15MB)
 MAX_FILE_SIZE = 15 * 1024 * 1024
+
+# ───────────────────────── INITIALIZATION
+
+# Initialize local models
+@st.cache_resource
+def get_local_models():
+    return DeepfakeDetector(), ImageProcessor()
+
+local_detector, image_processor = get_local_models()
+
+# Initialize Reality Defender SDK
+rd = None
+API_KEY_PRESENT = False
+
+if HAS_SDK:
+    try:
+        if "REALITY_DEFENDER_API_KEY" in st.secrets:
+            API_KEY = st.secrets["REALITY_DEFENDER_API_KEY"]
+            rd = RealityDefender(api_key=API_KEY)
+            API_KEY_PRESENT = True
+    except KeyError:
+        pass
+    except Exception as e:
+        st.error(f"❌ Failed to initialize Reality Defender SDK: {e}")
 
 # ───────────────────────── HELPER FUNCTIONS
 @contextmanager
@@ -37,7 +53,8 @@ def temp_file_context(file_bytes, suffix='.jpg'):
     """Context manager for temporary file handling"""
     temp_file_path = None
     try:
-        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp_file:
+        with tempfile.NamedTemporaryFile(delete=False,
+                                         suffix=suffix) as temp_file:
             temp_file.write(file_bytes)
             temp_file_path = temp_file.name
         yield temp_file_path
@@ -45,8 +62,11 @@ def temp_file_context(file_bytes, suffix='.jpg'):
         if temp_file_path and os.path.exists(temp_file_path):
             os.unlink(temp_file_path)
 
+
 def discover_sdk_methods() -> list:
     """Discover available SDK methods"""
+    if not rd:
+        return []
     available_methods = []
     for attr_name in dir(rd):
         if not attr_name.startswith('_'):
@@ -55,16 +75,20 @@ def discover_sdk_methods() -> list:
                 available_methods.append(attr_name)
     return available_methods
 
+
 def extract_job_id(response):
     """Extract job ID from various response formats"""
     if isinstance(response, str):
         return response
     elif isinstance(response, dict):
         # Try common field names
-        for field in ['id', 'job_id', 'request_id', 'upload_id', 'task_id', 'uuid']:
+        for field in [
+                'id', 'job_id', 'request_id', 'upload_id', 'task_id', 'uuid'
+        ]:
             if field in response:
                 return response[field]
     return None
+
 
 def poll_for_results(rd, job_id, max_attempts=20):
     """Poll for results with exponential backoff"""
@@ -90,29 +114,40 @@ def poll_for_results(rd, job_id, max_attempts=20):
                     pass
                 else:
                     # Check if we have actual results regardless of status
-                    if any(key in result for key in ['prediction', 'score', 'label', 'confidence']):
+                    if any(key in result for key in
+                           ['prediction', 'score', 'label', 'confidence']):
                         return result
 
             # Exponential backoff: 1s, 2s, 4s, 8s, max 10s
-            wait_time = min(2 ** attempt, 10)
+            wait_time = min(2**attempt, 10)
             time.sleep(wait_time)
 
         except Exception as e:
             if attempt == max_attempts - 1:
-                raise Exception(f"Polling failed after {max_attempts} attempts: {e}")
+                raise Exception(
+                    f"Polling failed after {max_attempts} attempts: {e}")
             time.sleep(2)
 
     raise TimeoutError("Polling timed out")
 
+
 def validate_file(uploaded_file) -> bool:
     """Validate uploaded file size and type"""
     if uploaded_file.size > MAX_FILE_SIZE:
-        st.error(f"❌ File too large ({uploaded_file.size / 1024 / 1024:.1f}MB). Maximum size is 15MB.")
+        st.error(
+            f"❌ File too large ({uploaded_file.size / 1024 / 1024:.1f}MB). Maximum size is 15MB."
+        )
         return False
     return True
 
-def analyze_with_sdk(file_bytes: bytes, filename: str = "image.jpg") -> Optional[Dict[Any, Any]]:
+
+def analyze_with_sdk(file_bytes: bytes,
+                     filename: str = "image.jpg") -> Optional[Dict[Any, Any]]:
     """Analyze image using Reality Defender SDK with method discovery"""
+
+    if not rd:
+         st.error("❌ Reality Defender SDK not initialized (missing API key?)")
+         return None
 
     available_methods = discover_sdk_methods()
     st.info(f"🔍 Available SDK methods: {', '.join(available_methods)}")
@@ -196,8 +231,33 @@ def analyze_with_sdk(file_bytes: bytes, filename: str = "image.jpg") -> Optional
         st.error("❌ All SDK methods failed")
         with st.expander("🛠️ Troubleshooting"):
             st.write("**Available methods:**", available_methods)
-            st.write("**Try checking the Reality Defender documentation for correct usage patterns.**")
+            st.write(
+                "**Try checking the Reality Defender documentation for correct usage patterns.**"
+            )
         return None
+
+def analyze_with_local_model(file_bytes: bytes) -> Optional[Dict[Any, Any]]:
+    """Analyze image using local educational model"""
+    try:
+        image = Image.open(io.BytesIO(file_bytes))
+
+        # Extract features
+        with st.spinner("🔄 Extracting image features..."):
+            features = image_processor.extract_features(image)
+
+        # Run detection
+        with st.spinner("🔄 Running statistical analysis..."):
+            result = local_detector.predict(features)
+
+        # Add educational note
+        result["model"] = "local-educational"
+        result["note"] = "Analysis performed using local statistical model (Educational Purpose)"
+
+        return result, features
+    except Exception as e:
+        st.error(f"❌ Local analysis failed: {e}")
+        return None, None
+
 
 def mock_analysis() -> Dict[Any, Any]:
     """Mock analysis for demo purposes"""
@@ -208,7 +268,8 @@ def mock_analysis() -> Dict[Any, Any]:
 
     # Generate mock results
     is_fake = random.choice([True, False])
-    confidence = random.uniform(0.7, 0.95) if is_fake else random.uniform(0.6, 0.9)
+    confidence = random.uniform(0.7, 0.95) if is_fake else random.uniform(
+        0.6, 0.9)
 
     return {
         "label": "fake" if is_fake else "real",
@@ -218,70 +279,126 @@ def mock_analysis() -> Dict[Any, Any]:
         "note": "This is a mock result for demonstration purposes"
     }
 
-def display_results(result: Dict[Any, Any]) -> None:
-    """Display analysis results in a user-friendly format"""
 
-    # Extract score/confidence
-    score = (result.get("score") or 
-             result.get("confidence") or 
-             result.get("probability"))
+def display_results_enhanced(result: Dict[Any, Any], local_features: Optional[Dict] = None) -> None:
+    """Beautiful, enhanced results display"""
 
-    # Extract label/prediction
-    label = (result.get("label") or 
-             result.get("prediction") or 
-             result.get("classification"))
+    overall_status = result.get("status", "").upper()
+    overall_score = result.get("score", 0)
 
-    # Handle boolean fields
-    if "is_fake" in result:
-        label = "fake" if result["is_fake"] else "real"
-    elif "is_deepfake" in result:
-        label = "fake" if result["is_deepfake"] else "real"
+    # Handling different result formats
+    if "confidence" in result and "score" not in result:
+        overall_score = result["confidence"]
 
-    # Handle numeric predictions (threshold-based)
-    if label is None and score is not None:
-        threshold = 0.5
-        label = "fake" if score > threshold else "real"
+    if "prediction" in result:
+         # Local model format
+         is_fake = result["prediction"]
+         overall_status = "MANIPULATED" if is_fake else "AUTHENTIC"
+    elif overall_status == "":
+         # Fallback if status not set but score is present
+         overall_status = "MANIPULATED" if overall_score > 0.5 else "AUTHENTIC"
 
-    # Display metrics
-    col1, col2 = st.columns(2)
+    models = result.get("models", [])
 
-    with col1:
-        if label:
-            st.metric("🎯 Result", str(label).title())
-        else:
-            st.metric("🎯 Result", "Unknown")
-
-    with col2:
-        if score is not None:
-            # Convert to percentage if needed
-            if score > 1:
-                score = score / 100
-            st.metric("📊 Confidence", f"{score:.1%}")
-        else:
-            st.metric("📊 Confidence", "N/A")
-
-    # Color-coded result
-    if str(label).lower() == "fake":
-        st.error("⚠️ **Potential deepfake/manipulation detected**")
-    elif str(label).lower() == "real":
-        st.success("✅ **Likely authentic image**")
+    # 🎯 HERO RESULT SECTION with gorgeous styling
+    if overall_status == "MANIPULATED":
+        st.markdown(f"""
+        <div style='background: linear-gradient(135deg, #ff6b6b, #ee5a24); padding: 2rem; border-radius: 15px; text-align: center; margin: 2rem 0; box-shadow: 0 4px 15px rgba(255,107,107,0.3);'>
+            <h2 style='color: white; margin: 0; font-size: 1.8rem;'>⚠️ AI Manipulation Detected</h2>
+            <h1 style='color: white; margin: 0.5rem 0; font-size: 4rem; font-weight: bold;'>{overall_score:.0%}</h1>
+            <p style='color: white; opacity: 0.9; margin: 0; font-size: 1.2rem;'>Confidence Level</p>
+        </div>
+        """, unsafe_allow_html=True)
     else:
-        st.info(f"ℹ️ **Result: {label}**")
+        authenticity = (1 - overall_score) * 100
+        st.markdown(f"""
+        <div style='background: linear-gradient(135deg, #2ecc71, #27ae60); padding: 2rem; border-radius: 15px; text-align: center; margin: 2rem 0; box-shadow: 0 4px 15px rgba(46,204,113,0.3);'>
+            <h2 style='color: white; margin: 0; font-size: 1.8rem;'>✅ Image Appears Authentic</h2>
+            <h1 style='color: white; margin: 0.5rem 0; font-size: 4rem; font-weight: bold;'>{authenticity:.0f}%</h1>
+            <p style='color: white; opacity: 0.9; margin: 0; font-size: 1.2rem;'>Authenticity Score</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # Display additional visualizations for local model
+    if local_features and "feature_analysis" in result:
+        st.markdown("### 🔍 Feature Analysis")
+        chart = utils.create_confidence_chart(result["feature_analysis"])
+        st.pyplot(chart)
+
+        risk = utils.get_risk_assessment(overall_score)
+        st.info(f"{risk['emoji']} **Risk Level: {risk['level']}**\n\n{risk['description']}")
+
+        with st.expander("💡 Recommendations"):
+            for rec in risk['recommendations']:
+                st.write(f"- {rec}")
+
+        utils.display_technical_details(local_features, result)
+
+
+    # 🤖 MODEL CONSENSUS with visual indicators (Only for API results that have models)
+    if models:
+        st.markdown("### 🤖 AI Model Analysis")
+
+        manipulated_count = sum(1 for m in models if m.get("status") == "MANIPULATED")
+        authentic_count = len(models) - manipulated_count
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.markdown(f"""
+            <div style='background: #ffebee; padding: 1.5rem; border-radius: 10px; border-left: 4px solid #f44336; text-align: center;'>
+                <h3 style='color: #d32f2f; margin: 0 0 0.5rem 0;'>🔴 Detected Manipulation</h3>
+                <h2 style='color: #d32f2f; margin: 0; font-size: 2.5rem;'>{manipulated_count}</h2>
+                <p style='color: #666; margin: 0;'>models</p>
+            </div>
+            """, unsafe_allow_html=True)
+
+        with col2:
+            st.markdown(f"""
+            <div style='background: #e8f5e8; padding: 1.5rem; border-radius: 10px; border-left: 4px solid #4caf50; text-align: center;'>
+                <h3 style='color: #388e3c; margin: 0 0 0.5rem 0;'>🟢 Detected Authentic</h3>
+                <h2 style='color: #388e3c; margin: 0; font-size: 2.5rem;'>{authentic_count}</h2>
+                <p style='color: #666; margin: 0;'>models</p>
+            </div>
+            """, unsafe_allow_html=True)
+
+        # 📊 DETAILED BREAKDOWN (hidden by default)
+        with st.expander("🔍 Detailed Model Analysis"):
+            for i, model in enumerate(models):
+                model_name = model.get("name", f"Model {i+1}")
+                model_status = model.get("status", "UNKNOWN")
+                model_score = model.get("score", 0)
+
+                if model_status == "MANIPULATED":
+                    st.markdown(f"""
+                    <div style='background: #ffebee; padding: 1rem; border-radius: 8px; margin: 0.5rem 0; border-left: 3px solid #f44336;'>
+                        <strong>🔴 {model_name}</strong><br>
+                        Status: {model_status} | Score: {model_score:.3f}
+                    </div>
+                    """, unsafe_allow_html=True)
+                else:
+                    st.markdown(f"""
+                    <div style='background: #e8f5e8; padding: 1rem; border-radius: 8px; margin: 0.5rem 0; border-left: 3px solid #4caf50;'>
+                        <strong>🟢 {model_name}</strong><br>
+                        Status: {model_status} | Score: {model_score:.3f}
+                    </div>
+                    """, unsafe_allow_html=True)
+
+    # 🔧 TECHNICAL DETAILS (for nerds only!)
+    if result.get("model") != "local-educational":
+        with st.expander("🤓 Raw Technical Data"):
+            st.json(result)
 
     # Demo mode warning
     if result.get("model") == "demo-mode":
-        st.warning("🎭 **DEMO MODE**: These are mock results for demonstration only!")
+        st.warning(
+            "🎭 **DEMO MODE**: These are mock results for demonstration only!")
 
-    # Detailed results
-    with st.expander("📋 View Detailed Results"):
-        st.json(result)
 
 # ───────────────────────── STREAMLIT UI
-st.set_page_config(
-    page_title="Reality Defender - Deepfake Detection", 
-    page_icon="🕵️",
-    layout="centered"
-)
+st.set_page_config(page_title="Deepfake Detection Tool",
+                   page_icon="🕵️",
+                   layout="centered")
 
 # Initialize session state
 if 'file_bytes' not in st.session_state:
@@ -289,54 +406,72 @@ if 'file_bytes' not in st.session_state:
 if 'last_file_name' not in st.session_state:
     st.session_state.last_file_name = None
 
-st.title("🕵️‍♀️ Reality Defender — Deepfake Detection")
-st.caption("Powered by Reality Defender Python SDK | v3.0 - Auto-discovery methods")
+# Beautiful gradient header
+st.markdown("""
+<div style='text-align: center; padding: 2rem; background: linear-gradient(90deg, #667eea 0%, #764ba2 100%); border-radius: 10px; margin-bottom: 2rem;'>
+    <h1 style='color: white; margin: 0; font-size: 2.5rem;'>🕵️‍♀️ Deepfake Detector</h1>
+    <p style='color: white; opacity: 0.9; margin: 0.5rem 0;'>Professional AI-Powered Deepfake Detection</p>
+</div>
+""",
+            unsafe_allow_html=True)
+
+st.caption(
+    "Powered by Reality Defender Python SDK & Custom Local Analysis")
 
 # Instructions
 with st.expander("📖 How to use"):
     st.write("""
-    1. **Upload an image** (JPG, JPEG, or PNG format)
-    2. **Wait for analysis** - the app will automatically try different SDK methods
-    3. **Review results** and confidence score
+    1. **Select Mode** - Choose between Cloud API (Reality Defender) or Local Model
+    2. **Upload an image** (JPG, JPEG, or PNG format)
+    3. **Review results** - See confidence scores and detailed analysis
 
     **Supported formats:** JPG, JPEG, PNG  
     **Maximum file size:** 15 MB
-
-    **Note:** This app automatically discovers and tries the correct SDK methods for your version.
     """)
 
 # Sidebar controls
 with st.sidebar:
     st.header("⚙️ Controls")
 
+    # Mode Selection
+    mode_options = ["Local Educational Model"]
+    if API_KEY_PRESENT:
+        mode_options.insert(0, "Reality Defender API (Cloud)")
+
+    selected_mode = st.radio("Select Detection Mode", mode_options)
+
+    is_cloud_mode = "Reality Defender" in selected_mode
+
     # Demo mode toggle
-    demo_mode = st.checkbox(
-        "🎭 Demo Mode", 
-        help="Use mock results for testing the interface"
-    )
+    demo_mode = st.checkbox("🎭 Demo Mode",
+                            help="Use mock results for testing the interface")
 
     if demo_mode:
         st.warning("🎭 Demo mode enabled - results are not real!")
 
-    # SDK status
-    st.subheader("📡 SDK Status")
-    try:
-        available_methods = discover_sdk_methods()
-        st.success(f"✅ SDK Ready ({len(available_methods)} methods)")
+    if is_cloud_mode:
+        # SDK status
+        st.subheader("📡 SDK Status")
+        try:
+            available_methods = discover_sdk_methods()
+            st.success(f"✅ SDK Ready ({len(available_methods)} methods)")
 
-        with st.expander("Available methods"):
-            for method in available_methods:
-                st.write(f"• `{method}()`")
+            with st.expander("Available methods"):
+                for method in available_methods:
+                    st.write(f"• `{method}()`")
 
-    except Exception as e:
-        st.error(f"❌ SDK Error: {e}")
+        except Exception as e:
+            st.error(f"❌ SDK Error: {e}")
+    else:
+        st.subheader("💻 Local Model Status")
+        st.success("✅ Local Model Ready")
+        st.info("Using statistical analysis and anomaly detection")
+
 
 # Main upload interface
-uploaded_file = st.file_uploader(
-    "📤 Upload an image for deepfake detection",
-    type=["jpg", "jpeg", "png"],
-    help="Maximum file size: 15MB"
-)
+uploaded_file = st.file_uploader("📤 Upload an image for deepfake detection",
+                                 type=["jpg", "jpeg", "png"],
+                                 help="Maximum file size: 15MB")
 
 if uploaded_file is not None:
     # Validate file
@@ -344,8 +479,8 @@ if uploaded_file is not None:
         st.stop()
 
     # Cache file bytes to avoid re-reading on rerun
-    if (st.session_state.file_bytes is None or 
-        st.session_state.last_file_name != uploaded_file.name):
+    if (st.session_state.file_bytes is None
+            or st.session_state.last_file_name != uploaded_file.name):
 
         st.session_state.file_bytes = uploaded_file.read()
         st.session_state.last_file_name = uploaded_file.name
@@ -353,7 +488,9 @@ if uploaded_file is not None:
     # Display uploaded image
     try:
         image = Image.open(io.BytesIO(st.session_state.file_bytes))
-        st.image(image, caption=f'📷 Uploaded: {uploaded_file.name}', use_container_width=True)
+        st.image(image,
+                 caption=f'📷 Uploaded: {uploaded_file.name}',
+                 use_container_width=True)
     except Exception as e:
         st.error(f"❌ Could not display image: {e}")
         st.stop()
@@ -368,34 +505,40 @@ if uploaded_file is not None:
             result = mock_analysis()
 
         st.success("🎭 Demo analysis complete!")
-        display_results(result)
+        display_results_enhanced(result)
 
-    else:
+    elif is_cloud_mode:
         # Real SDK analysis
         st.info("🔍 Starting Reality Defender analysis...")
 
-        result = analyze_with_sdk(st.session_state.file_bytes, uploaded_file.name)
+        result = analyze_with_sdk(st.session_state.file_bytes,
+                                  uploaded_file.name)
 
         if result:
             st.success("✅ Analysis complete!")
-            display_results(result)
+            display_results_enhanced(result)
+
         else:
             st.error("❌ Analysis failed. Try Demo Mode to test the interface.")
 
-            with st.expander("💡 Troubleshooting Tips"):
-                st.write("""
-                1. **Check your API key** - Make sure it's valid and has sufficient credits
-                2. **Try a different image** - Some formats might not be supported
-                3. **Check the SDK documentation** - Method names might have changed
-                4. **Use Demo Mode** - To test the interface while debugging
-                """)
+    else:
+        # Local model analysis
+        st.info("🔍 Starting Local Model analysis...")
+
+        result, features = analyze_with_local_model(st.session_state.file_bytes)
+
+        if result:
+            st.success("✅ Analysis complete!")
+            display_results_enhanced(result, features)
+        else:
+            st.error("❌ Local analysis failed.")
 
 # Footer
 st.markdown("---")
 st.markdown("""
 <div style='text-align: center; color: #666; font-size: 0.8em;'>
-<b>Reality Defender SDK Integration</b><br>
-This app automatically discovers and uses the correct SDK methods for your version.<br>
-<i>Keep your API key secure in Streamlit secrets.</i>
+<b>Deepfake Detection Tool</b><br>
+Reality Defender Integration & Local Statistical Analysis<br>
 </div>
-""", unsafe_allow_html=True)
+""",
+            unsafe_allow_html=True)

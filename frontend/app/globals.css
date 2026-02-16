@@ -1,0 +1,40 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-cream: #FDFBF7;
+  --fg-navy: #0B123B;
+  --accent-orange: #FF7F50;
+  --grid-line: #E2E8F0;
+}
+
+@layer base {
+  body {
+    @apply bg-[var(--bg-cream)] text-[var(--fg-navy)] antialiased font-sans;
+    background-image:
+      linear-gradient(var(--grid-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+    background-size: 40px 40px;
+    background-position: center center;
+  }
+}
+
+@layer utilities {
+  .text-display {
+    @apply font-sans font-black tracking-tight uppercase leading-none;
+  }
+
+  .text-mono-technical {
+    @apply font-mono text-xs tracking-wider uppercase text-[var(--fg-navy)] opacity-60;
+  }
+
+  /* Technical Borders */
+  .border-tech {
+    @apply border border-[var(--fg-navy)] opacity-10;
+  }
+
+  .border-tech-dashed {
+    @apply border border-dashed border-[var(--fg-navy)] border-opacity-20;
+  }
+}

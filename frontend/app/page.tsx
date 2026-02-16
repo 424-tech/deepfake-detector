@@ -36,7 +36,7 @@ export default function Home() {
             setAnalysisPhase('local');
 
             // Timeout set to 120 seconds (120000ms) to allow for deep debugging of long processes
-            const response = await axios.post("http://localhost:8000/api/v1/analyze/full", formData, {
+            const response = await axios.post("/api/v1/analyze/full", formData, {
                 headers: {
                     "Content-Type": "multipart/form-data",
                 },

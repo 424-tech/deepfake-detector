@@ -13,7 +13,7 @@ export default function Header() {
     const navItems = [
         { name: "Detector", href: "/" },
         { name: "About", href: "/about" },
-        { name: "API Docs", href: "http://localhost:8000/api/v1/docs" },
+        { name: "API Docs", href: "/api/v1/docs" },
     ];
 
     return (

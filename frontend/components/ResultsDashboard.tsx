@@ -7,7 +7,7 @@ interface AnalysisResult {
     local?: {
         prediction: boolean;
         confidence: number;
-        feature_analysis?: Record<str, number>;
+        feature_analysis?: Record<string, number>;
         risk_assessment?: {
             level: string;
             description: string;

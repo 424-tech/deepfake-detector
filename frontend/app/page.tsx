@@ -88,7 +88,7 @@ export default function Home() {
     return (
         <div className="flex flex-col min-h-screen relative overflow-hidden bg-[#FDFBF7]">
 
-            <div className="relative z-10 container mx-auto px-4 pt-16 md:pt-32 pb-12 flex-grow flex flex-col justify-center items-center">
+            <div className="relative z-10 container mx-auto px-4 pt-12 md:pt-32 pb-8 md:pb-12 flex-grow flex flex-col justify-center items-center">
 
                 {/* Hero Headers */}
                 <AnimatePresence>
@@ -98,12 +98,12 @@ export default function Home() {
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -15 }}
                             transition={{ duration: 0.5 }}
-                            className="text-center mb-6 max-w-4xl relative z-10"
+                            className="text-center mb-4 md:mb-6 max-w-4xl relative z-10"
                         >
-                            <h1 className="text-5xl sm:text-7xl md:text-8xl font-black tracking-tighter text-[#0B123B] mb-6 uppercase leading-[0.9]">
+                            <h1 className="text-4xl sm:text-6xl md:text-8xl font-black tracking-tighter text-[#0B123B] mb-3 md:mb-6 uppercase leading-[0.85] sm:leading-[0.9]">
                                 Is this<br className="hidden sm:block" /> Real?
                             </h1>
-                            <p className="text-lg md:text-xl font-medium text-[#0B123B]/80 max-w-2xl mx-auto leading-relaxed tracking-wide font-mono">
+                            <p className="text-sm sm:text-lg md:text-xl font-medium text-[#0B123B]/80 max-w-2xl mx-auto leading-relaxed tracking-wide font-mono">
                                 UPLOAD MEDIA FOR INSTANT <span className="text-[#FF7F50] font-bold">FORENSIC ANALYSIS</span>.
                             </p>
                         </motion.div>

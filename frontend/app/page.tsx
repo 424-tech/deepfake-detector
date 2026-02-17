@@ -100,8 +100,8 @@ export default function Home() {
                             transition={{ duration: 0.5 }}
                             className="text-center mb-10 max-w-4xl relative z-10"
                         >
-                            <h1 className="text-6xl md:text-8xl font-black tracking-tighter text-[#0B123B] mb-6 uppercase leading-[0.9]">
-                                Is this<br />Real?
+                            <h1 className="text-5xl sm:text-7xl md:text-8xl font-black tracking-tighter text-[#0B123B] mb-6 uppercase leading-[0.9]">
+                                Is this<br className="hidden sm:block" /> Real?
                             </h1>
                             <p className="text-lg md:text-xl font-medium text-[#0B123B]/80 max-w-2xl mx-auto leading-relaxed tracking-wide font-mono">
                                 UPLOAD MEDIA FOR INSTANT <span className="text-[#FF7F50] font-bold">FORENSIC ANALYSIS</span>.

@@ -63,7 +63,19 @@ export default function Home() {
             // Note: In a real streaming API we'd update phases more granularly.
             // For now we simulate the transitions or just move to finalizing.
             setAnalysisPhase('finalizing');
-            setResult(response.data.results);
+
+            // Normalize response: /analyze/local returns { data: {...} }
+            // while /analyze/full returns { results: { local: {...}, reality_defender: {...} } }
+            if (skipRD && response.data.data) {
+                // Wrap local-only response into the format ResultsDashboard expects
+                setResult({
+                    local: response.data.data,
+                    reality_defender: { status: "DEMO_MODE", message: "Skipped in demo mode" },
+                    status: "success"
+                });
+            } else {
+                setResult(response.data.results);
+            }
         } catch (err: any) {
             console.error("Analysis Error Details:", {
                 message: err.message,

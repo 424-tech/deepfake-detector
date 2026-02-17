@@ -198,7 +198,14 @@ export default function Home() {
                 </p>
                 <div className="mt-2 flex items-center justify-center gap-2">
                     <span className="text-[9px] font-mono text-[#0B123B]/30 uppercase tracking-tight">Product developed by</span>
-                    <span className="text-[10px] font-black text-[#0B123B] tracking-tighter uppercase">fourtwofour.tech</span>
+                    <a
+                        href="https://fourtwofour.tech"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[10px] font-black text-[#0B123B] tracking-tighter uppercase hover:text-[#FF7F50] transition-colors"
+                    >
+                        fourtwofour.tech
+                    </a>
                 </div>
             </footer>
 

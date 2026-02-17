@@ -88,7 +88,7 @@ export default function Home() {
     return (
         <div className="flex flex-col min-h-screen relative overflow-hidden bg-[#FDFBF7]">
 
-            <div className="relative z-10 container mx-auto px-4 pt-32 pb-12 flex-grow flex flex-col justify-center items-center">
+            <div className="relative z-10 container mx-auto px-4 pt-16 md:pt-32 pb-12 flex-grow flex flex-col justify-center items-center">
 
                 {/* Hero Headers */}
                 <AnimatePresence>
@@ -98,7 +98,7 @@ export default function Home() {
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -15 }}
                             transition={{ duration: 0.5 }}
-                            className="text-center mb-10 max-w-4xl relative z-10"
+                            className="text-center mb-6 max-w-4xl relative z-10"
                         >
                             <h1 className="text-5xl sm:text-7xl md:text-8xl font-black tracking-tighter text-[#0B123B] mb-6 uppercase leading-[0.9]">
                                 Is this<br className="hidden sm:block" /> Real?

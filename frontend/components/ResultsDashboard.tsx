@@ -140,8 +140,8 @@ export default function ResultsDashboard({ result, imageUrl }: ResultsDashboardP
                         <h3 className="text-xs uppercase tracking-widest text-[#0B123B]/60 font-bold mb-6">AI PROBABILITY SCORE</h3>
 
                         <div className="flex items-baseline gap-2 mb-4">
-                            <span className={`text-7xl font-black ${themeColor} tracking-tighter`}>{(confidence * 100).toFixed(0)}</span>
-                            <span className="text-2xl font-bold text-[#0B123B]/40">%</span>
+                            <span className={`text-6xl sm:text-7xl font-black ${themeColor} tracking-tighter`}>{(confidence * 100).toFixed(0)}</span>
+                            <span className="text-xl sm:text-2xl font-bold text-[#0B123B]/40">%</span>
                         </div>
 
                         {/* Progress Bar */}

@@ -18,18 +18,18 @@ export default function Header() {
     return (
         <header className="fixed top-0 z-50 w-full bg-[#FDFBF7]/80 backdrop-blur-sm border-b border-[#0B123B]/10">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="flex items-center justify-between h-16">
+                <div className="flex items-center justify-between h-14 md:h-16">
 
                     {/* Logo Area */}
-                    <Link href="/" className="flex items-center gap-3 group">
-                        <div className="w-8 h-8 bg-[#0B123B] flex items-center justify-center text-[#FDFBF7]">
-                            <Activity className="w-5 h-5" />
+                    <Link href="/" className="flex items-center gap-2 md:gap-3 group">
+                        <div className="w-7 h-7 md:w-8 md:h-8 bg-[#0B123B] flex items-center justify-center text-[#FDFBF7]">
+                            <Activity className="w-4 h-4 md:w-5 h-5" />
                         </div>
                         <div className="flex flex-col">
-                            <span className="text-display text-lg tracking-tighter text-[#0B123B]">
+                            <span className="text-display text-base md:text-lg tracking-tighter text-[#0B123B]">
                                 DEEPFAKE CHECK
                             </span>
-                            <span className="text-[10px] font-mono tracking-[0.2em] text-[#0B123B]/60 leading-none">
+                            <span className="text-[9px] md:text-[10px] font-mono tracking-[0.2em] text-[#0B123B]/60 leading-none">
                                 V1.0.4.B
                             </span>
                         </div>
@@ -61,13 +61,20 @@ export default function Header() {
                         </nav>
                     </div>
 
-                    {/* Mobile Menu Button */}
-                    <div className="md:hidden">
+                    {/* Mobile Menu Button + Status Dot (Always visible on mobile) */}
+                    <div className="flex items-center gap-4 md:hidden">
+                        <div className="flex items-center gap-1.5 px-2 py-1 bg-emerald-500/5 rounded-full border border-emerald-500/10">
+                            <span className="relative flex h-1.5 w-1.5">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+                            </span>
+                            <span className="text-[8px] font-mono font-bold text-emerald-600 tracking-tighter uppercase">ONLINE</span>
+                        </div>
                         <button
                             onClick={toggleMenu}
-                            className="p-2 text-[#0B123B] hover:bg-[#0B123B] hover:text-[#FDFBF7] transition-colors"
+                            className="p-1.5 text-[#0B123B] hover:bg-[#0B123B] hover:text-[#FDFBF7] transition-colors"
                         >
-                            {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+                            {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
                         </button>
                     </div>
                 </div>

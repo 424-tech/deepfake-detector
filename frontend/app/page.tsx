@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import Dropzone from "@/components/Dropzone";
 import ResultsDashboard from "@/components/ResultsDashboard";
 import SkeletonLoader from "@/components/SkeletonLoader";
+import Header from "@/components/Header";
 
 export default function Home() {
     const [file, setFile] = useState<File | null>(null);

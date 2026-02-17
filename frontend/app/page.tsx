@@ -72,7 +72,7 @@ export default function Home() {
                     local: response.data.data,
                     reality_defender: { status: "DEMO_MODE", message: "Skipped in demo mode" },
                     status: "success"
-                });
+                } as any);
             } else {
                 setResult(response.data.results);
             }

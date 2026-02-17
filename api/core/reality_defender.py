@@ -147,6 +147,7 @@ class RealityDefenderService:
 
         # Strategy 3: Direct byte methods (Fallback)
         direct_methods = [
+            ('detect', lambda: self.rd.detect(file_bytes)),
             ('analyze_image', lambda: self.rd.analyze_image(file_bytes)),
             ('detect_image', lambda: self.rd.detect_image(file_bytes)),
             ('predict', lambda: self.rd.predict(file_bytes)),

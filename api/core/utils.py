@@ -31,9 +31,16 @@ def convert_numpy_to_python(obj: Any) -> Any:
     elif isinstance(obj, np.integer):
         return int(obj)
     elif isinstance(obj, np.floating):
+        if np.isnan(obj) or np.isinf(obj):
+            return 0.0
         return float(obj)
+    elif isinstance(obj, float):
+        import math
+        if math.isnan(obj) or math.isinf(obj):
+            return 0.0
+        return obj
     elif isinstance(obj, np.ndarray):
-        return convert_numpy_to_python(obj.tolist())
+        return [convert_numpy_to_python(i) for i in obj.tolist()]
     else:
         return obj
 

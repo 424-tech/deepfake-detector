@@ -49,12 +49,15 @@ export default function ResultsDashboard({ result, imageUrl }: ResultsDashboardP
     }
 
     // 2. Determine confidence (priority to RD score)
-    let confidence = 0;
+    let rawConfidence = 0;
     if (rdData && rdData.score !== undefined) {
-        confidence = rdData.score;
+        rawConfidence = rdData.score;
     } else if (localData) {
-        confidence = localData.confidence;
+        rawConfidence = localData.confidence;
     }
+
+    // Defensive check: Ensure confidence is a valid number
+    const confidence = isNaN(Number(rawConfidence)) ? 0 : Number(rawConfidence);
 
     // 3. Risk description
     const riskDescription = rdData?.status === "MANIPULATED"
@@ -163,11 +166,14 @@ export default function ResultsDashboard({ result, imageUrl }: ResultsDashboardP
                                 <div className="pt-2 border-t border-[#0B123B]/5">
                                     <div className="text-[9px] font-mono uppercase tracking-widest text-[#0B123B]/40 mb-2">Active Forensic Models</div>
                                     <div className="flex flex-wrap gap-2">
-                                        {rdData.models.map((model: any, i: number) => (
-                                            <span key={i} className={`px-2 py-1 text-[9px] font-mono border ${model.status === 'MANIPULATED' ? 'border-[#FF7F50]/20 text-[#FF7F50] bg-[#FF7F50]/5' : 'border-[#0B123B]/10 text-[#0B123B]/60'}`}>
-                                                {model.name}: {(model.score * 100).toFixed(0)}%
-                                            </span>
-                                        ))}
+                                        {rdData.models.map((model: any, i: number) => {
+                                            const modelScore = isNaN(Number(model.score)) ? 0 : Number(model.score);
+                                            return (
+                                                <span key={i} className={`px-2 py-1 text-[9px] font-mono border ${model.status === 'MANIPULATED' ? 'border-[#FF7F50]/20 text-[#FF7F50] bg-[#FF7F50]/5' : 'border-[#0B123B]/10 text-[#0B123B]/60'}`}>
+                                                    {model.name}: {(modelScore * 100).toFixed(0)}%
+                                                </span>
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             )}
@@ -177,20 +183,23 @@ export default function ResultsDashboard({ result, imageUrl }: ResultsDashboardP
                     {/* Feature Analysis */}
                     <div className="space-y-3">
                         <h4 className="text-[10px] uppercase tracking-widest text-[#0B123B]/50 font-bold mb-2">LOCAL FORENSIC VECTORS</h4>
-                        {Object.entries(features).map(([key, score], idx) => (
-                            <div key={key} className="flex items-center gap-4 text-xs font-mono">
-                                <span className="w-24 text-[#0B123B]/70 uppercase text-right">{key.replace(/_/g, " ")}</span>
-                                <div className="flex-grow h-6 bg-[#0B123B]/5 relative">
-                                    <motion.div
-                                        initial={{ width: 0 }}
-                                        animate={{ width: `${score * 100}%` }}
-                                        transition={{ delay: 0.1 * idx, duration: 0.8 }}
-                                        className="h-full bg-[#0B123B]"
-                                    />
+                        {Object.entries(features).map(([key, rawScore], idx) => {
+                            const score = isNaN(Number(rawScore)) ? 0 : Number(rawScore);
+                            return (
+                                <div key={key} className="flex items-center gap-4 text-xs font-mono">
+                                    <span className="w-24 text-[#0B123B]/70 uppercase text-right">{key.replace(/_/g, " ")}</span>
+                                    <div className="flex-grow h-6 bg-[#0B123B]/5 relative">
+                                        <motion.div
+                                            initial={{ width: 0 }}
+                                            animate={{ width: `${score * 100}%` }}
+                                            transition={{ delay: 0.1 * idx, duration: 0.8 }}
+                                            className="h-full bg-[#0B123B]"
+                                        />
+                                    </div>
+                                    <span className="w-12 text-[#0B123B] font-bold">{(score * 100).toFixed(0)}%</span>
                                 </div>
-                                <span className="w-12 text-[#0B123B] font-bold">{(score * 100).toFixed(0)}%</span>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
 
                     {/* Reality Defender Deep Link (Prototype Match) */}

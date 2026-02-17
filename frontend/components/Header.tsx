@@ -12,7 +12,6 @@ export default function Header() {
 
     const navItems = [
         { name: "Detector", href: "/" },
-        { name: "About", href: "/about" },
         { name: "API Docs", href: "/api/v1/docs" },
     ];
 

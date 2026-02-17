@@ -192,10 +192,14 @@ export default function Home() {
 
             </div>
 
-            <footer className="relative z-10 py-8 text-center">
-                <p className="text-slate-600 text-xs font-medium">
+            <footer className="relative z-10 py-8 text-center border-t border-[#0B123B]/5 bg-white">
+                <p className="text-[#0B123B]/40 text-[10px] font-mono tracking-widest uppercase">
                     &copy; 2024 DEEPFAKE CHECK • PROTECTING DIGITAL INTEGRITY
                 </p>
+                <div className="mt-2 flex items-center justify-center gap-2">
+                    <span className="text-[9px] font-mono text-[#0B123B]/30 uppercase tracking-tight">Product developed by</span>
+                    <span className="text-[10px] font-black text-[#0B123B] tracking-tighter uppercase">fourtwofour.tech</span>
+                </div>
             </footer>
 
         </div>

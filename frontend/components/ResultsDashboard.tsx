@@ -1,7 +1,8 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { AlertTriangle, CheckCircle, Smartphone, Activity, Cpu } from "lucide-react";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { AlertTriangle, CheckCircle, Smartphone, Activity, Cpu, ChevronDown, ChevronUp, Database } from "lucide-react";
 
 interface AnalysisResult {
     local?: {
@@ -14,7 +15,13 @@ interface AnalysisResult {
             color: string;
         }
     };
-    reality_defender?: any;
+    reality_defender?: {
+        status?: string;
+        score?: number;
+        models?: any[];
+        error?: string;
+        [key: string]: any;
+    };
     status: string;
 }
 
@@ -24,14 +31,39 @@ interface ResultsDashboardProps {
 }
 
 export default function ResultsDashboard({ result, imageUrl }: ResultsDashboardProps) {
+    const [showJson, setShowJson] = useState(false);
+
     if (!result || !imageUrl) return null;
 
+    // --- MERGE LOGIC ---
+    // Reality Defender (RD) is the gold standard. We prioritize its findings.
+    const rdData = result.reality_defender;
     const localData = result.local;
-    const isDeepfake = localData?.prediction;
-    const confidence = localData?.confidence || 0;
+
+    // 1. Determine if it's a deepfake (priority to RD)
+    let isDeepfake = false;
+    if (rdData && rdData.status) {
+        isDeepfake = rdData.status.toUpperCase() === "MANIPULATED";
+    } else if (localData) {
+        isDeepfake = localData.prediction;
+    }
+
+    // 2. Determine confidence (priority to RD score)
+    let confidence = 0;
+    if (rdData && rdData.score !== undefined) {
+        confidence = rdData.score;
+    } else if (localData) {
+        confidence = localData.confidence;
+    }
+
+    // 3. Risk description
+    const riskDescription = rdData?.status === "MANIPULATED"
+        ? `REALITY DEFENDER VERDICT: Manipulation identified with ${(confidence * 100).toFixed(1)}% probability. Several forensic models detected algorithmic artifacts.`
+        : localData?.risk_assessment?.description || "Analysis complete. Review individual feature vectors for details.";
+
     const features = localData?.feature_analysis || {};
 
-    // Determine theme based on result
+    // --- THEME ---
     const themeColor = isDeepfake ? "text-[#FF7F50]" : "text-emerald-600";
     const borderColor = isDeepfake ? "border-[#FF7F50]" : "border-emerald-600";
     const statusText = isDeepfake ? "MANIPULATION DETECTED" : "AUTHENTICITY VERIFIED";
@@ -87,7 +119,7 @@ export default function ResultsDashboard({ result, imageUrl }: ResultsDashboardP
 
                         <div className="mt-2 flex justify-between items-center px-1">
                             <span className="text-[10px] font-mono text-[#0B123B]/60">IMG_SOURCE_RAW</span>
-                            <span className="text-[10px] font-mono text-[#0B123B]/60">{(confidence * 100).toFixed(0)}% OPAQUE</span>
+                            <span className="text-[10px] font-mono text-[#0B123B]/60">VERDICT_ID: {rdData?.request_id?.slice(0, 8).toUpperCase() || 'LOCAL_SCAN'}</span>
                         </div>
                     </div>
                 </motion.div>
@@ -122,14 +154,29 @@ export default function ResultsDashboard({ result, imageUrl }: ResultsDashboardP
                             />
                         </div>
 
-                        <p className="text-[#0B123B] text-sm font-medium leading-relaxed font-mono">
-                            {localData?.risk_assessment?.description}
-                        </p>
+                        <div className="space-y-4">
+                            <p className="text-[#0B123B] text-sm font-medium leading-relaxed font-mono">
+                                {riskDescription}
+                            </p>
+
+                            {rdData && rdData.models && (
+                                <div className="pt-2 border-t border-[#0B123B]/5">
+                                    <div className="text-[9px] font-mono uppercase tracking-widest text-[#0B123B]/40 mb-2">Active Forensic Models</div>
+                                    <div className="flex flex-wrap gap-2">
+                                        {rdData.models.map((model: any, i: number) => (
+                                            <span key={i} className={`px-2 py-1 text-[9px] font-mono border ${model.status === 'MANIPULATED' ? 'border-[#FF7F50]/20 text-[#FF7F50] bg-[#FF7F50]/5' : 'border-[#0B123B]/10 text-[#0B123B]/60'}`}>
+                                                {model.name}: {(model.score * 100).toFixed(0)}%
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     </div>
 
                     {/* Feature Analysis */}
                     <div className="space-y-3">
-                        <h4 className="text-[10px] uppercase tracking-widest text-[#0B123B]/50 font-bold mb-2">FEATURE VECTORS</h4>
+                        <h4 className="text-[10px] uppercase tracking-widest text-[#0B123B]/50 font-bold mb-2">LOCAL FORENSIC VECTORS</h4>
                         {Object.entries(features).map(([key, score], idx) => (
                             <div key={key} className="flex items-center gap-4 text-xs font-mono">
                                 <span className="w-24 text-[#0B123B]/70 uppercase text-right">{key.replace(/_/g, " ")}</span>
@@ -144,6 +191,35 @@ export default function ResultsDashboard({ result, imageUrl }: ResultsDashboardP
                                 <span className="w-12 text-[#0B123B] font-bold">{(score * 100).toFixed(0)}%</span>
                             </div>
                         ))}
+                    </div>
+
+                    {/* Reality Defender Deep Link (Prototype Match) */}
+                    <div className="border border-[#0B123B]/10 bg-white">
+                        <button
+                            onClick={() => setShowJson(!showJson)}
+                            className="w-full px-4 py-3 flex items-center justify-between text-[10px] font-mono uppercase tracking-widest text-[#0B123B] hover:bg-[#0B123B]/5 transition-colors"
+                        >
+                            <div className="flex items-center gap-2">
+                                <Database className="w-3 h-3" />
+                                View Technical Metadata (RD JSON)
+                            </div>
+                            {showJson ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                        </button>
+
+                        <AnimatePresence>
+                            {showJson && (
+                                <motion.div
+                                    initial={{ height: 0, opacity: 0 }}
+                                    animate={{ height: "auto", opacity: 1 }}
+                                    exit={{ height: 0, opacity: 0 }}
+                                    className="overflow-hidden border-t border-[#0B123B]/10"
+                                >
+                                    <pre className="p-4 text-[10px] font-mono text-blue-600 overflow-x-auto whitespace-pre-wrap bg-[#0B123B]/5 max-h-[400px]">
+                                        {JSON.stringify(rdData || { message: "No RD metadata available in this scan instance." }, null, 2)}
+                                    </pre>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
                     </div>
 
                 </motion.div>

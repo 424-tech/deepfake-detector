@@ -5,6 +5,4 @@ realitydefender
 numpy
 scikit-learn
 pillow
-opencv-python-headless
-scipy
 python-dotenv

@@ -203,8 +203,16 @@ class ImageProcessor:
             return 0.0
             
         # Check differences across 8-pixel boundaries
-        h_diffs = np.abs(gray_img[8::8, :] - gray_img[7::8, :])
-        v_diffs = np.abs(gray_img[:, 8::8] - gray_img[:, 7::8])
+        # Use slices and ensure they have matching lengths for broadcasting
+        h_slice8 = gray_img[8::8, :]
+        h_slice7 = gray_img[7::8, :]
+        min_h = min(len(h_slice8), len(h_slice7))
+        h_diffs = np.abs(h_slice8[:min_h] - h_slice7[:min_h])
+        
+        v_slice8 = gray_img[:, 8::8]
+        v_slice7 = gray_img[:, 7::8]
+        min_v = min(v_slice8.shape[1], v_slice7.shape[1])
+        v_diffs = np.abs(v_slice8[:, :min_v] - v_slice7[:, :min_v])
         
         artifact_score = (np.mean(h_diffs) + np.mean(v_diffs)) / 255.0
         return min(1.0, artifact_score)

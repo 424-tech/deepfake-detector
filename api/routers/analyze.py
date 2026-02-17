@@ -130,7 +130,11 @@ def analyze_full(file: UploadFile = File(...)):
                  results["reality_defender"] = {"error": f"API Error: {str(e)}"}
     else:
          print("Reality Defender service not available.")
-         results["reality_defender"] = {"available": False}
+         results["reality_defender"] = {
+             "status": "UNAVAILABLE",
+             "message": "Reality Defender SDK not initialized. Ensure REALITY_DEFENDER_API_KEY is set in environment variables.",
+             "available": False
+         }
          
     response = {
         "status": "success",

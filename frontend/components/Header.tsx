@@ -63,12 +63,12 @@ export default function Header({ skipRD = false }: { skipRD?: boolean }) {
 
                     {/* Mobile Menu Button + Status Dot (Always visible on mobile) */}
                     <div className="flex items-center gap-4 md:hidden">
-                        <div className="flex items-center gap-1.5 px-2 py-1 bg-emerald-500/5 rounded-full border border-emerald-500/10">
+                        <div className={`flex items-center gap-1.5 px-2 py-1 ${skipRD ? 'bg-amber-500/5 border-amber-500/10' : 'bg-emerald-500/5 border-emerald-500/10'} rounded-full border`}>
                             <span className="relative flex h-1.5 w-1.5">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+                                <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${skipRD ? 'bg-amber-400' : 'bg-emerald-400'} opacity-75`}></span>
+                                <span className={`relative inline-flex rounded-full h-1.5 w-1.5 ${skipRD ? 'bg-amber-500' : 'bg-emerald-500'}`}></span>
                             </span>
-                            <span className="text-[8px] font-mono font-bold text-emerald-600 tracking-tighter uppercase">ONLINE</span>
+                            <span className={`text-[8px] font-mono font-bold ${skipRD ? 'text-amber-600' : 'text-emerald-600'} tracking-tighter uppercase`}>{skipRD ? 'DEMO' : 'ONLINE'}</span>
                         </div>
                         <button
                             onClick={toggleMenu}

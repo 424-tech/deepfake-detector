@@ -13,12 +13,18 @@ app = FastAPI(
 )
 
 # CORS Config
-# Relaxing for debugging "Spinal Disconnect"
-origins = ["*"]
+origins = [
+    "https://www.fourtwofour.tech",
+    "https://fourtwofour.tech",
+    "https://deepfake-detector-pro.vercel.app",
+    "http://localhost:3000",
+    "https://deepfake-detector-pro-git-main-ks-projects-4b0a05ba.vercel.app"
+]
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
+    allow_origin_regex="https://deepfake-detector-.*\.vercel\.app", # Allow all vercel previews
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

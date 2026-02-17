@@ -5,7 +5,7 @@ import { Menu, X, Activity } from "lucide-react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 
-export default function Header() {
+export default function Header({ skipRD = false }: { skipRD?: boolean }) {
     const [isOpen, setIsOpen] = useState(false);
 
     const toggleMenu = () => setIsOpen(!isOpen);
@@ -40,11 +40,11 @@ export default function Header() {
                         {/* System Status Indicator */}
                         <div className="flex items-center gap-2 border-r border-[#0B123B]/10 pr-12">
                             <span className="relative flex h-2 w-2">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                                <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${skipRD ? 'bg-amber-400' : 'bg-emerald-400'} opacity-75`}></span>
+                                <span className={`relative inline-flex rounded-full h-2 w-2 ${skipRD ? 'bg-amber-500' : 'bg-emerald-500'}`}></span>
                             </span>
                             <span className="text-mono-technical text-[#0B123B]">
-                                SYSTEM: ONLINE
+                                {skipRD ? 'DEBUG MODE' : 'SYSTEM: ONLINE'}
                             </span>
                         </div>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
 import { AnimatePresence, motion } from "framer-motion";
 import Dropzone from "@/components/Dropzone";
@@ -14,6 +14,13 @@ export default function Home() {
     const [result, setResult] = useState(null);
     const [error, setError] = useState<string | null>(null);
     const [analysisPhase, setAnalysisPhase] = useState<'upload' | 'local' | 'external' | 'finalizing'>('upload');
+    const [skipRD, setSkipRD] = useState(false);
+
+    // Check for skipRD URL parameter on mount
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        setSkipRD(params.get('skipRD') === 'true');
+    }, []);
 
     const handleFileSelect = async (selectedFile: File) => {
         setFile(selectedFile);
@@ -31,12 +38,14 @@ export default function Home() {
         formData.append("file", selectedFile);
 
         try {
-            // Call full analysis endpoint (Local + Reality Defender)
-            // Phase: Local Forensics (starts immediately after upload)
+            // Determine endpoint based on skipRD flag
+            const endpoint = skipRD ? "/api/v1/analyze/local" : "/api/v1/analyze/full";
+
+            // Call analysis endpoint
             setAnalysisPhase('local');
 
             // Timeout set to 120 seconds (120000ms) to allow for deep debugging of long processes
-            const response = await axios.post("/api/v1/analyze/full", formData, {
+            const response = await axios.post(endpoint, formData, {
                 headers: {
                     "Content-Type": "multipart/form-data",
                 },
@@ -87,6 +96,7 @@ export default function Home() {
 
     return (
         <div className="flex flex-col min-h-screen relative overflow-hidden bg-[#FDFBF7]">
+            <Header skipRD={skipRD} />
 
             <div className="relative z-10 container mx-auto px-4 pt-12 md:pt-32 pb-8 md:pb-12 flex-grow flex flex-col justify-center items-center">
 

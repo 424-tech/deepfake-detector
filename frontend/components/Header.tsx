@@ -44,7 +44,7 @@ export default function Header({ skipRD = false }: { skipRD?: boolean }) {
                                 <span className={`relative inline-flex rounded-full h-2 w-2 ${skipRD ? 'bg-amber-500' : 'bg-emerald-500'}`}></span>
                             </span>
                             <span className="text-mono-technical text-[#0B123B]">
-                                {skipRD ? 'DEBUG MODE' : 'SYSTEM: ONLINE'}
+                                {skipRD ? 'DEMO MODE' : 'SYSTEM: ONLINE'}
                             </span>
                         </div>
 
